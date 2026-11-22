@@ -1,0 +1,90 @@
+<% if controller && controller.controller_name == 'admin' && controller.action_name == 'plugins' %>
+  <% status = RedminePluginUpdate::Log.consume_status %>
+  <% if status.present? %>
+    <div id="redmine-plugin-update-status" class="flash warning"><%= status %></div>
+  <% end %>
+
+  <div id="redmine-plugin-update-add" class="box">
+    <h3><%= l(:redmine_plugin_update_add) %></h3>
+    <%= form_tag({:controller => 'redmine_plugin_update', :action => 'install'}) do %>
+      <p>
+        <label for="redmine_plugin_update_url"><%= l(:redmine_plugin_update_url) %></label>
+        <%= text_field_tag :url, '', :id => 'redmine_plugin_update_url', :size => 70,
+              :placeholder => 'https://github.com/org/plugin.git', :maxlength => 300 %>
+        <%= submit_tag l(:redmine_plugin_update_add), :data => {:confirm => l(:redmine_plugin_update_confirm_add)} %>
+      </p>
+    <% end %>
+    <p class="help"><%= l(:redmine_plugin_update_add_help) %></p>
+  </div>
+
+  <div id="redmine-plugin-update-meta"
+       data-pull-label="<%= l(:redmine_plugin_update_pull) %>"
+       data-remove-label="<%= l(:redmine_plugin_update_remove) %>"
+       data-pull-confirm="<%= l(:redmine_plugin_update_confirm_pull) %>"
+       data-remove-confirm="<%= l(:redmine_plugin_update_confirm_remove) %>"
+       data-pull-path="<%= url_for(:controller => 'redmine_plugin_update', :action => 'pull') %>"
+       data-remove-path="<%= url_for(:controller => 'redmine_plugin_update', :action => 'remove') %>"
+       data-git="<%= RedminePluginUpdate.git_plugin_ids.to_json %>"></div>
+
+  <%= javascript_tag do %>
+    (function() {
+      var meta = document.getElementById('redmine-plugin-update-meta');
+      var box = document.getElementById('redmine-plugin-update-add');
+      var status = document.getElementById('redmine-plugin-update-status');
+      var content = document.getElementById('content');
+      if (content) {
+        if (status) { content.insertBefore(status, content.firstChild); }
+        if (box) { content.insertBefore(box, status ? status.nextSibling : content.firstChild); }
+      }
+      if (!meta) { return; }
+
+      var tokenMeta = document.querySelector('meta[name="csrf-token"]');
+      var paramMeta = document.querySelector('meta[name="csrf-param"]');
+      var token = tokenMeta ? tokenMeta.getAttribute('content') : '';
+      var tokenName = paramMeta ? paramMeta.getAttribute('content') : 'authenticity_token';
+      var gitIds = [];
+      try { gitIds = JSON.parse(meta.getAttribute('data-git') || '[]'); } catch (e) { gitIds = []; }
+
+      function addButton(cell, label, action, confirmText, pluginId) {
+        var form = document.createElement('form');
+        form.method = 'post';
+        form.action = action;
+        form.style.display = 'inline';
+        form.addEventListener('submit', function(event) {
+          if (!window.confirm(confirmText)) { event.preventDefault(); }
+        });
+        var csrf = document.createElement('input');
+        csrf.type = 'hidden';
+        csrf.name = tokenName;
+        csrf.value = token;
+        var idInput = document.createElement('input');
+        idInput.type = 'hidden';
+        idInput.name = 'plugin_id';
+        idInput.value = pluginId;
+        var button = document.createElement('button');
+        button.type = 'submit';
+        button.textContent = label;
+        form.appendChild(csrf);
+        form.appendChild(idInput);
+        form.appendChild(button);
+        cell.appendChild(document.createTextNode(' '));
+        cell.appendChild(form);
+      }
+
+      var rows = document.querySelectorAll('table.plugins tr[id^="plugin-"]');
+      for (var i = 0; i < rows.length; i++) {
+        var row = rows[i];
+        if (row.getAttribute('data-plugin-update') === '1') { continue; }
+        row.setAttribute('data-plugin-update', '1');
+        var pluginId = row.id.substring('plugin-'.length);
+        if (!/^[a-z0-9_]+$/.test(pluginId)) { continue; }
+        var cell = row.cells[row.cells.length - 1];
+        if (!cell) { continue; }
+        if (gitIds.indexOf(pluginId) !== -1) {
+          addButton(cell, meta.getAttribute('data-pull-label'), meta.getAttribute('data-pull-path'), meta.getAttribute('data-pull-confirm'), pluginId);
+        }
+        addButton(cell, meta.getAttribute('data-remove-label'), meta.getAttribute('data-remove-path'), meta.getAttribute('data-remove-confirm'), pluginId);
+      }
+    })();
+  <% end %>
+<% end %>

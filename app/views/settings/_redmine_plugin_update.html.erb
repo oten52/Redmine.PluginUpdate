@@ -1,0 +1,6 @@
+<p>
+  <label for="settings_restart_command"><%= l(:redmine_plugin_update_restart_command) %></label>
+  <%= text_field_tag 'settings[restart_command]', @settings['restart_command'],
+        :id => 'settings_restart_command', :size => 60, :maxlength => 200 %>
+</p>
+<p class="help"><%= l(:redmine_plugin_update_restart_help) %></p>
