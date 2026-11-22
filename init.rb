@@ -23,7 +23,7 @@ Redmine::Plugin.register :redmine_plugin_update do
   author 'Niltek Arge'
   author_url 'https://github.com/oten52'
   description 'Eklenti sayfasından git adresiyle eklenti ekler, günceller ve kaldırır.'
-  version '0.1.1'
+  version '0.1.2'
   url 'https://github.com/oten52/Redmine.PluginUpdate'
   requires_redmine version_or_higher: '4.2'
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2
+
+* When `docker` is not available inside the container, boot the new code with `rails runner` before restarting.
+* Do not restart, and revert the file change, when that boot test fails.
+* After a successful boot test, stop the process so the container restart policy can start Redmine again.
+
 ## 0.1.1
 
 * Keep the plugins-page redirect on a relative path so an in-container request does not end as an internal error.

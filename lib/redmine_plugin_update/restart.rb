@@ -12,9 +12,12 @@ module RedminePluginUpdate
         revert(rollback, 'rejected restart command')
         return Result.fail(I18n.t(:redmine_plugin_update_failed))
       end
-      if command.empty? || !executable_available?(command)
-        Log.error('restart', 'restart command is not available inside the container') unless command.empty?
+      if command.empty?
         return Result.ok(I18n.t(:redmine_plugin_update_manual_restart))
+      end
+      unless executable_available?(command)
+        Log.error('restart', 'restart command is not available inside the container')
+        return restart_in_process(rollback)
       end
 
       locale = I18n.locale
@@ -69,6 +72,64 @@ module RedminePluginUpdate
       status.success?
     rescue StandardError
       false
+    end
+
+    # docker is not inside the container. Prove the new code can boot, then
+    # stop this process so the container restart policy starts it again.
+    def self.restart_in_process(rollback)
+      ok, output = boot_test
+      unless ok
+        Log.error('restart', "boot test failed: #{output.to_s.slice(0, 2000)}")
+        begin
+          rollback.call
+          Log.error('rollback', 'operation reverted')
+        rescue StandardError => e
+          Log.error('rollback', e.message)
+        end
+        return Result.fail(I18n.t(:redmine_plugin_update_boot_failed))
+      end
+
+      Thread.new do
+        sleep 2
+        signal_restart
+      end
+      Result.ok(I18n.t(:redmine_plugin_update_restarting))
+    end
+
+    def self.boot_test
+      log_path = Rails.root.join('tmp', 'redmine_plugin_update_boot.txt').to_s
+      FileUtils.mkdir_p(File.dirname(log_path))
+      pid = Process.spawn(
+        'bundle', 'exec', 'rails', 'runner', '-e', Rails.env.to_s, 'puts "BOOT OK"',
+        :chdir => Rails.root.to_s,
+        :out => log_path,
+        :err => [:child, :out]
+      )
+      _pid, status = Timeout.timeout(180) { Process.wait2(pid) }
+      output = File.read(log_path).to_s rescue ''
+      File.delete(log_path) rescue nil
+      [status.success? && output.include?('BOOT OK'), output]
+    rescue Timeout::Error
+      Process.kill('TERM', pid) rescue nil
+      Process.wait(pid) rescue nil
+      [false, 'boot test timed out']
+    rescue StandardError => e
+      [false, "#{e.class}: #{e.message}"]
+    end
+
+    def self.signal_restart
+      targets = []
+      targets << 1 if File.exist?('/.dockerenv')
+      targets << Process.pid
+      targets.uniq.each do |target|
+        begin
+          Process.kill('TERM', target)
+          Log.error('restart', "sent TERM to #{target}")
+          return
+        rescue StandardError => e
+          Log.error('restart', "TERM #{target}: #{e.message}")
+        end
+      end
     end
 
     def self.revert(rollback, failure)

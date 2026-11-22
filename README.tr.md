@@ -13,7 +13,7 @@ Eklenti yönetim sayfasından git adresiyle eklenti ekler, günceller ve kaldır
 * Yönetim → Eklentiler sayfasında git adresi yazarak eklenti eklersiniz.
 * Git kopyası olan her eklentinin yanında Güncelle düğmesi vardır. O klasörde `git pull --ff-only` çalışır.
 * Her eklentinin yanında Kaldır düğmesi vardır. Klasör kenara alınır, ardından Redmine yeniden başlar.
-* Ekleme, güncelleme veya kaldırma başarılı olunca ayarlardaki yeniden başlatma komutu çalışır. Varsayılan `docker restart redmine-redmine-1` komutudur.
+* Ekleme, güncelleme veya kaldırma başarılı olunca Redmine yeniden başlar. Konteynerde `docker` yoksa önce `rails runner` ile açılış denenir. Açılış olmazsa yeniden başlatma yapılmaz ve dosya değişikliği geri alınır. Açılış olursa süreç kapatılır. Konteynerin kendiliğinden gelmesi için serviste `restart: unless-stopped` olmalıdır.
 * Klonlama, çekme veya yeniden başlatma komutu hata verirse dosya değişikliği geri alınır. Hata `log/redmine_plugin_update.log` dosyasına ve Redmine loguna yazılır.
 * Yerel değişikliği olan eklenti güncellenmez.
 * `init.rb` içermeyen depo ve zaten yüklü olan eklenti geri silinir.
@@ -36,7 +36,7 @@ Klasör adı `Redmine.PluginUpdate` olarak kalabilir.
 
 2. Redmine'ı yeniden başlatın.
 
-3. Yönetim → Eklentiler → Plugin Güncelle → Yapılandır. Yeniden başlatma komutu konteynerin içinde çalışır. Resmi imajda `docker` ve çoğu zaman `git` yoktur. Git yoksa güncelleme yapılmaz. Docker yoksa dosya değişikliği kalır; sunucuda `docker restart redmine-redmine-1` çalıştırırsınız. Eklenti klasörüne konteyner kullanıcısının yazma izni olmalıdır.
+3. Yönetim → Eklentiler → Plugin Güncelle → Yapılandır. Resmi imajda `docker` ve çoğu zaman `git` yoktur. Git yoksa güncelleme yapılmaz. Docker yoksa eklenti, açılış denemesinden sonra süreci kapatır. Compose servisinde `restart: unless-stopped` yoksa konteyner kapalı kalır. Eklenti klasörüne konteyner kullanıcısının yazma izni olmalıdır.
 
 ## Kaldırma
 
