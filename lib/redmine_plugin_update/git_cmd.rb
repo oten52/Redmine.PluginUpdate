@@ -57,9 +57,11 @@ module RedminePluginUpdate
       stdout, stderr, status = Timeout.timeout(180) do
         Open3.capture3({'GIT_TERMINAL_PROMPT' => '0'}, *command)
       end
-      [stdout.to_s, stderr.to_s, status.success?]
-    rescue StandardError => e
-      ['', e.message, false]
+      [Log.utf8(stdout), Log.utf8(stderr), status.success?]
+    rescue SignalException, SystemExit
+      raise
+    rescue Exception => e
+      ['', "#{e.class}: #{e.message}", false]
     end
   end
 end

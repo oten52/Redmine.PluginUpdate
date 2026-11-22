@@ -36,7 +36,7 @@ The directory name can stay `Redmine.PluginUpdate`.
 
 2. Restart Redmine.
 
-3. Open Administration → Plugins → Plugin Güncelle → Configure if the restart command should be different. Inside Docker, `docker restart` works only when the Docker client can reach the Docker socket. If the command fails, the plugin change is reverted.
+3. Open Administration → Plugins → Plugin Güncelle → Configure if the restart command should be different. The command runs inside the container. The official image often has neither `git` nor `docker`. Without git, an update does not run. Without docker, the file change stays and you restart on the server with `docker restart redmine-redmine-1`. The container user must be able to write the plugin directory.
 
 ## Uninstall
 

@@ -36,7 +36,7 @@ Klasör adı `Redmine.PluginUpdate` olarak kalabilir.
 
 2. Redmine'ı yeniden başlatın.
 
-3. Yeniden başlatma komutu farklıysa Yönetim → Eklentiler → Plugin Güncelle → Yapılandır. Docker içinde `docker restart` yalnızca Docker istemcisi sokete ulaşabiliyorsa çalışır. Komut hata verirse eklenti değişikliği geri alınır.
+3. Yönetim → Eklentiler → Plugin Güncelle → Yapılandır. Yeniden başlatma komutu konteynerin içinde çalışır. Resmi imajda `docker` ve çoğu zaman `git` yoktur. Git yoksa güncelleme yapılmaz. Docker yoksa dosya değişikliği kalır; sunucuda `docker restart redmine-redmine-1` çalıştırırsınız. Eklenti klasörüne konteyner kullanıcısının yazma izni olmalıdır.
 
 ## Kaldırma
 

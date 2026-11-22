@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.1
+
+* Keep the plugins-page redirect on a relative path so an in-container request does not end as an internal error.
+* If git is missing or the container user cannot write the plugin directory, report that instead of a generic failure.
+* If the restart command is not available inside the container, keep the file change and ask for a restart on the server.
+
 ## 0.1.0
 
 * Add, update, and remove plugins from the Administration plugins page.

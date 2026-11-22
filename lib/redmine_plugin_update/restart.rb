@@ -12,7 +12,8 @@ module RedminePluginUpdate
         revert(rollback, 'rejected restart command')
         return Result.fail(I18n.t(:redmine_plugin_update_failed))
       end
-      if command.empty?
+      if command.empty? || !executable_available?(command)
+        Log.error('restart', 'restart command is not available inside the container') unless command.empty?
         return Result.ok(I18n.t(:redmine_plugin_update_manual_restart))
       end
 
@@ -40,12 +41,34 @@ module RedminePluginUpdate
       end
       return nil if status.success?
 
-      "#{stderr} #{stdout}".strip
+      output = "#{stderr} #{stdout}".strip
+      if status.exitstatus == 127 || output.match?(/not found|No such file or directory/i)
+        Log.error('restart', "command did not start: #{output}")
+        Log.write_status(I18n.t(:redmine_plugin_update_manual_restart))
+        return nil
+      end
+
+      output
     rescue Timeout::Error
       Log.error('restart', 'command timed out; the change was left in place')
       nil
+    rescue Errno::ENOENT => e
+      Log.error('restart', "command not available: #{e.message}")
+      Log.write_status(I18n.t(:redmine_plugin_update_manual_restart))
+      nil
     rescue StandardError => e
       e.message
+    end
+
+    def self.executable_available?(command)
+      exe = command.to_s.strip.split(/\s+/, 2).first.to_s
+      return false unless exe =~ /\A[A-Za-z0-9._+\-\/]+\z/
+      return File.executable?(exe) if exe.include?('/')
+
+      _out, _err, status = Open3.capture3('sh', '-c', 'command -v "$1"', 'sh', exe)
+      status.success?
+    rescue StandardError
+      false
     end
 
     def self.revert(rollback, failure)

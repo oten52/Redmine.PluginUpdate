@@ -27,7 +27,11 @@ module RedminePluginUpdate
   end
 
   def self.settings
-    Setting.plugin_redmine_plugin_update || {}
+    value = Setting.plugin_redmine_plugin_update
+    value.is_a?(Hash) ? value : {}
+  rescue StandardError => e
+    Log.error('settings', e.message)
+    {}
   end
 
   def self.git_plugin_ids
